@@ -47,6 +47,7 @@ defined (CONFIG_ARCH_MSM8610) || defined (CONFIG_ARCH_MSM8228)
 #define THREAD_CAPACITY			(190 - CAPACITY_RESERVE)
 #else
 #define THREAD_CAPACITY			(250 - CAPACITY_RESERVE)
+<<<<<<< HEAD
 #endif
 #define CPU_NR_THRESHOLD		((THREAD_CAPACITY << 1) + \
 					(THREAD_CAPACITY / 2))
@@ -56,8 +57,15 @@ defined (CONFIG_ARCH_MSM8610) || defined (CONFIG_ARCH_MSM8228)
 <<<<<<< HEAD
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
+=======
+>>>>>>> a87eac5... intelli_plug: sync for latest changes
 #endif
+#define CPU_NR_THRESHOLD		((THREAD_CAPACITY << 1) + \
+					(THREAD_CAPACITY / 2))
+#define MULT_FACTOR			4
+#define DIV_FACTOR			100000
 
+<<<<<<< HEAD
 //#define DEBUG_INTELLI_PLUG
 #undef DEBUG_INTELLI_PLUG
 
@@ -73,6 +81,9 @@ defined (CONFIG_ARCH_MSM8610) || defined (CONFIG_ARCH_MSM8228)
 #define BUSY_PERSISTENCE		(3500 / DEF_SAMPLING_MS)
 
 static DEFINE_MUTEX(intelli_plug_mutex);
+=======
+static u64 last_boost_time, last_input;
+>>>>>>> a87eac5... intelli_plug: sync for latest changes
 =======
 static u64 last_boost_time, last_input;
 >>>>>>> a87eac5... intelli_plug: sync for latest changes
@@ -292,8 +303,12 @@ static void __ref cpu_up_down_work(struct work_struct *work)
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 #if defined(CONFIG_POWERSUSPEND) || defined(CONFIG_HAS_EARLYSUSPEND)
 static void screen_off_limit(bool on)
+=======
+static void intelli_plug_work_fn(struct work_struct *work)
+>>>>>>> a87eac5... intelli_plug: sync for latest changes
 =======
 static void intelli_plug_work_fn(struct work_struct *work)
 >>>>>>> a87eac5... intelli_plug: sync for latest changes
@@ -303,7 +318,10 @@ static void intelli_plug_work_fn(struct work_struct *work)
 		return;
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 }
+=======
+>>>>>>> a87eac5... intelli_plug: sync for latest changes
 =======
 >>>>>>> a87eac5... intelli_plug: sync for latest changes
 
@@ -321,6 +339,7 @@ static void __ref intelli_plug_suspend(void)
 
 	if (!hotplug_suspend)
 		return;
+<<<<<<< HEAD
 
 	if (hotplug_suspended == false) {
 		mutex_lock(&intelli_plug_mutex);
@@ -407,21 +426,87 @@ static void wakeup_boost(void)
 	unsigned int cpu;
 	struct cpufreq_policy *policy;
 	struct ip_cpu_info *l_ip_info;
+=======
 
-	for_each_online_cpu(cpu) {
-		policy = cpufreq_cpu_get(0);
-		l_ip_info = &per_cpu(ip_info, 0);
-		policy->cur = l_ip_info->cur_max;
-		cpufreq_update_policy(cpu);
+	if (hotplug_suspended == false) {
+		mutex_lock(&intelli_plug_mutex);
+		hotplug_suspended = true;
+		min_cpus_online_res = min_cpus_online;
+		min_cpus_online = 1;
+		max_cpus_online_res = max_cpus_online;
+		max_cpus_online = 3;
+		mutex_unlock(&intelli_plug_mutex);
+
+		/* Flush hotplug workqueue */
+		flush_workqueue(intelliplug_wq);
+		cancel_delayed_work_sync(&intelli_plug_work);
+
+		/* Put sibling cores to sleep */
+		for_each_online_cpu(cpu) {
+			if (cpu == 0)
+				continue;
+			cpu_down(cpu);
+		}
+
+		/*
+		 * Enable core 1,2 so we will have 0-2 online
+		 * when screen is OFF to reduce system lags and reboots.
+		 */
+		cpu_up(1);
+		cpu_up(2);
+>>>>>>> a87eac5... intelli_plug: sync for latest changes
+
+		dprintk("%s: suspended!\n", INTELLI_PLUG);
 	}
 }
 
+<<<<<<< HEAD
 #ifdef CONFIG_POWERSUSPEND
 static void __ref intelli_plug_resume(struct power_suspend *handler)
 #else
 static void __ref intelli_plug_resume(struct early_suspend *handler)
 #endif
 =======
+#ifdef CONFIG_STATE_NOTIFIER
+static int state_notifier_callback(struct notifier_block *this,
+				unsigned long event, void *data)
+>>>>>>> a87eac5... intelli_plug: sync for latest changes
+=======
+static void __ref intelli_plug_resume(void)
+{
+	int cpu, required_reschedule = 0, required_wakeup = 0;
+
+	if (hotplug_suspended) {
+		mutex_lock(&intelli_plug_mutex);
+		hotplug_suspended = false;
+		min_cpus_online = min_cpus_online_res;
+		max_cpus_online = max_cpus_online_res;
+		mutex_unlock(&intelli_plug_mutex);
+		required_wakeup = 1;
+		/* Initiate hotplug work if it was cancelled */
+		required_reschedule = 1;
+		INIT_DELAYED_WORK(&intelli_plug_work,
+				intelli_plug_work_fn);
+		dprintk("%s: resumed.\n", INTELLI_PLUG);
+	}
+
+	if (required_wakeup) {
+		/* Fire up all CPUs */
+		for_each_cpu_not(cpu, cpu_online_mask) {
+			if (cpu == 0)
+				continue;
+			cpu_up(cpu);
+			apply_down_lock(cpu);
+		}
+		dprintk("%s: wakeup boosted.\n", INTELLI_PLUG);
+	}
+
+	/* Resume hotplug workqueue if required */
+	if (required_reschedule)
+		queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
+				      msecs_to_jiffies(RESUME_SAMPLING_MS));
+}
+
 #ifdef CONFIG_STATE_NOTIFIER
 static int state_notifier_callback(struct notifier_block *this,
 				unsigned long event, void *data)
@@ -440,6 +525,7 @@ static int state_notifier_callback(struct notifier_block *this,
 		default:
 			break;
 	}
+<<<<<<< HEAD
 <<<<<<< HEAD
 	queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
 		msecs_to_jiffies(10));
@@ -475,6 +561,9 @@ static int __ref intelli_plug_pm_notifier(struct notifier_block *notifier,
 		/* nothing to do */
 		break;
 	}
+=======
+
+>>>>>>> a87eac5... intelli_plug: sync for latest changes
 =======
 
 >>>>>>> a87eac5... intelli_plug: sync for latest changes
@@ -519,11 +608,19 @@ static int intelli_plug_input_connect(struct input_handler *handler,
 	handle->dev = dev;
 	handle->handler = handler;
 	handle->name = handler->name;
+<<<<<<< HEAD
 
 	err = input_register_handle(handle);
 	if (err)
 		goto err_register;
 
+=======
+
+	err = input_register_handle(handle);
+	if (err)
+		goto err_register;
+
+>>>>>>> a87eac5... intelli_plug: sync for latest changes
 	err = input_open_device(handle);
 	if (err)
 		goto err_open;
@@ -573,11 +670,16 @@ static struct input_handler intelli_plug_input_handler = {
 static int __ref intelli_plug_start(void)
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	int rc;
 #if defined (CONFIG_POWERSUSPEND) || defined(CONFIG_HAS_EARLYSUSPEND)
 	struct cpufreq_policy *policy;
 	struct ip_cpu_info *l_ip_info;
 #endif
+=======
+	int cpu, ret = 0;
+	struct down_lock *dl;
+>>>>>>> a87eac5... intelli_plug: sync for latest changes
 =======
 	int cpu, ret = 0;
 	struct down_lock *dl;
@@ -609,6 +711,7 @@ static int __ref intelli_plug_start(void)
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 #if defined (CONFIG_POWERSUSPEND) || defined(CONFIG_HAS_EARLYSUSPEND)
 	l_ip_info = &per_cpu(ip_info, 0);
 	policy = cpufreq_cpu_get(0);
@@ -628,6 +731,11 @@ static int __ref intelli_plug_start(void)
 				WQ_HIGHPRI | WQ_UNBOUND, 1);
 	intelliplug_boost_wq = alloc_workqueue("iplug_boost",
 				WQ_HIGHPRI | WQ_UNBOUND, 1);
+=======
+	mutex_init(&intelli_plug_mutex);
+
+	INIT_WORK(&up_down_work, cpu_up_down_work);
+>>>>>>> a87eac5... intelli_plug: sync for latest changes
 =======
 	mutex_init(&intelli_plug_mutex);
 
@@ -664,6 +772,7 @@ err_out:
 	atomic_set(&intelli_plug_active, 0);
 	return ret;
 }
+<<<<<<< HEAD
 
 static void intelli_plug_stop(void)
 {
@@ -898,6 +1007,242 @@ static int __init intelli_plug_init(void)
 		 INTELLI_PLUG_MAJOR_VERSION,
 		 INTELLI_PLUG_MINOR_VERSION);
 
+=======
+
+static void intelli_plug_stop(void)
+{
+	int cpu;
+	struct down_lock *dl;
+
+	for_each_possible_cpu(cpu) {
+		dl = &per_cpu(lock_info, cpu);
+		cancel_delayed_work_sync(&dl->lock_rem);
+	}
+	flush_workqueue(intelliplug_wq);
+	cancel_work_sync(&up_down_work);
+	cancel_delayed_work_sync(&intelli_plug_work);
+	mutex_destroy(&intelli_plug_mutex);
+#ifdef CONFIG_STATE_NOTIFIER
+	state_unregister_client(&notif);
+#endif
+	notif.notifier_call = NULL;
+
+	input_unregister_handler(&intelli_plug_input_handler);
+	destroy_workqueue(intelliplug_wq);
+
+	/* Put all sibling cores to sleep */
+	for_each_online_cpu(cpu) {
+		if (cpu == 0)
+			continue;
+		cpu_down(cpu);
+	}
+}
+
+static void intelli_plug_active_eval_fn(unsigned int status)
+{
+	int ret = 0;
+
+	if (status == 1) {
+		ret = intelli_plug_start();
+		if (ret)
+			status = 0;
+	} else
+		intelli_plug_stop();
+
+	atomic_set(&intelli_plug_active, status);
+}
+
+#define show_one(file_name, object)				\
+static ssize_t show_##file_name					\
+(struct kobject *kobj, struct kobj_attribute *attr, char *buf)	\
+{								\
+	return sprintf(buf, "%u\n", object);			\
+}
+
+show_one(cpus_boosted, cpus_boosted);
+show_one(min_cpus_online, min_cpus_online);
+show_one(max_cpus_online, max_cpus_online);
+show_one(hotplug_suspend, hotplug_suspend);
+show_one(full_mode_profile, full_mode_profile);
+show_one(cpu_nr_run_threshold, cpu_nr_run_threshold);
+show_one(def_sampling_ms, def_sampling_ms);
+show_one(debug_intelli_plug, debug_intelli_plug);
+show_one(nr_fshift, nr_fshift);
+show_one(nr_run_hysteresis, nr_run_hysteresis);
+show_one(down_lock_duration, down_lock_dur);
+
+#define store_one(file_name, object)		\
+static ssize_t store_##file_name		\
+(struct kobject *kobj,				\
+ struct kobj_attribute *attr,			\
+ const char *buf, size_t count)			\
+{						\
+	unsigned int input;			\
+	int ret;				\
+	ret = sscanf(buf, "%u", &input);	\
+	if (ret != 1 || input > 100)		\
+		return -EINVAL;			\
+	if (input == object) {			\
+		return count;			\
+	}					\
+	object = input;				\
+	return count;				\
+}
+
+store_one(cpus_boosted, cpus_boosted);
+store_one(hotplug_suspend, hotplug_suspend);
+store_one(full_mode_profile, full_mode_profile);
+store_one(cpu_nr_run_threshold, cpu_nr_run_threshold);
+store_one(def_sampling_ms, def_sampling_ms);
+store_one(debug_intelli_plug, debug_intelli_plug);
+store_one(nr_fshift, nr_fshift);
+store_one(nr_run_hysteresis, nr_run_hysteresis);
+store_one(down_lock_duration, down_lock_dur);
+
+static ssize_t show_intelli_plug_active(struct kobject *kobj,
+					struct kobj_attribute *attr,
+					char *buf)
+{
+	return sprintf(buf, "%d\n",
+			atomic_read(&intelli_plug_active));
+}
+
+static ssize_t store_intelli_plug_active(struct kobject *kobj,
+					 struct kobj_attribute *attr,
+					 const char *buf, size_t count)
+{
+	int ret;
+	unsigned int input;
+
+	ret = sscanf(buf, "%d", &input);
+	if (ret < 0)
+		return ret;
+
+	if (input < 0)
+		input = 0;
+	else if (input > 0)
+		input = 1;
+
+	if (input == atomic_read(&intelli_plug_active))
+		return count;
+
+	intelli_plug_active_eval_fn(input);
+
+	return count;
+}
+
+static ssize_t show_boost_lock_duration(struct kobject *kobj,
+					struct kobj_attribute *attr,
+					char *buf)
+{
+	return sprintf(buf, "%llu\n", div_u64(boost_lock_duration, 1000));
+}
+
+static ssize_t store_boost_lock_duration(struct kobject *kobj,
+					 struct kobj_attribute *attr,
+					 const char *buf, size_t count)
+{
+	int ret;
+	u64 val;
+
+	ret = sscanf(buf, "%llu", &val);
+	if (ret != 1)
+		return -EINVAL;
+
+	boost_lock_duration = val * 1000;
+
+	return count;
+}
+
+static ssize_t store_min_cpus_online(struct kobject *kobj,
+				     struct kobj_attribute *attr,
+				     const char *buf, size_t count)
+{
+	int ret;
+	unsigned int val;
+
+	ret = sscanf(buf, "%u", &val);
+	if (ret != 1 || val < 1 || val > NR_CPUS)
+		return -EINVAL;
+
+	if (max_cpus_online < val)
+		max_cpus_online = val;
+
+	min_cpus_online = val;
+
+	return count;
+}
+
+static ssize_t store_max_cpus_online(struct kobject *kobj,
+				     struct kobj_attribute *attr,
+				     const char *buf, size_t count)
+{
+	int ret;
+	unsigned int val;
+
+	ret = sscanf(buf, "%u", &val);
+	if (ret != 1 || val < 1 || val > NR_CPUS)
+		return -EINVAL;
+
+	if (min_cpus_online > val)
+		min_cpus_online = val;
+
+	max_cpus_online = val;
+
+	return count;
+}
+
+#define KERNEL_ATTR_RW(_name) \
+static struct kobj_attribute _name##_attr = \
+	__ATTR(_name, 0644, show_##_name, store_##_name)
+
+KERNEL_ATTR_RW(intelli_plug_active);
+KERNEL_ATTR_RW(cpus_boosted);
+KERNEL_ATTR_RW(min_cpus_online);
+KERNEL_ATTR_RW(max_cpus_online);
+KERNEL_ATTR_RW(hotplug_suspend);
+KERNEL_ATTR_RW(full_mode_profile);
+KERNEL_ATTR_RW(cpu_nr_run_threshold);
+KERNEL_ATTR_RW(boost_lock_duration);
+KERNEL_ATTR_RW(def_sampling_ms);
+KERNEL_ATTR_RW(debug_intelli_plug);
+KERNEL_ATTR_RW(nr_fshift);
+KERNEL_ATTR_RW(nr_run_hysteresis);
+KERNEL_ATTR_RW(down_lock_duration);
+
+static struct attribute *intelli_plug_attrs[] = {
+	&intelli_plug_active_attr.attr,
+	&cpus_boosted_attr.attr,
+	&min_cpus_online_attr.attr,
+	&max_cpus_online_attr.attr,
+	&hotplug_suspend_attr.attr,
+	&full_mode_profile_attr.attr,
+	&cpu_nr_run_threshold_attr.attr,
+	&boost_lock_duration_attr.attr,
+	&def_sampling_ms_attr.attr,
+	&debug_intelli_plug_attr.attr,
+	&nr_fshift_attr.attr,
+	&nr_run_hysteresis_attr.attr,
+	&down_lock_duration_attr.attr,
+	NULL,
+};
+
+static struct attribute_group intelli_plug_attr_group = {
+	.attrs = intelli_plug_attrs,
+	.name = "intelli_plug",
+};
+
+static int __init intelli_plug_init(void)
+{
+	int rc;
+
+	rc = sysfs_create_group(kernel_kobj, &intelli_plug_attr_group);
+
+	pr_info("intelli_plug: version %d.%d\n",
+		 INTELLI_PLUG_MAJOR_VERSION,
+		 INTELLI_PLUG_MINOR_VERSION);
+
+>>>>>>> a87eac5... intelli_plug: sync for latest changes
 	if (atomic_read(&intelli_plug_active) == 1)
 		intelli_plug_start();
 
