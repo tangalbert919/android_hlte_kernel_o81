@@ -7,10 +7,12 @@
 
 UBERTC="/home/theidroid/Documents/arm-linux-androideabi-8.x/bin/arm-linux-androideabi-"
 
-KERNEL_DATE=`date +%Y-%m-%d`
+DEFAULT="/home/theidroid/Android/Sdk/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-"
+
+KERNEL_DATE=`date +%Y%m%d`
 
 export ARCH=arm
-export CROSS_COMPILE="$UBERTC"
+export CROSS_COMPILE="$DEFAULT"
 
 mkdir output
 
