@@ -7,7 +7,7 @@
 
 UBERTC="/home/theidroid/Documents/arm-linux-androideabi-8.x/bin/arm-linux-androideabi-"
 
-KERNEL_DATE="$(DATE +"%y%m%d")"
+KERNEL_DATE=`date +%Y-%m-%d`
 
 export ARCH=arm
 export CROSS_COMPILE="$UBERTC"
@@ -18,6 +18,6 @@ make -C $(pwd) O=output msm8974_sec_defconfig VARIANT_DEFCONFIG=lineage_hlte_bcm
 make -j64 -C $(pwd) O=output
 
 # cp output/arch/arm/boot/Image $(pwd)/arch/arm/boot/zImage
-cp output/arch/arm/boot/Image AnyKernel/zImage
+cp output/arch/arm/boot/Image AnyKernel2/zImage
 
-cd AnyKernel/ && zip -r9 ZyborgX-hlte-$KERNEL_DATE.zip * -x README.md ZyborgX-hlte-$KERNEL_DATE.zip && cd ..
+cd AnyKernel2/ && zip -r9 ZyborgX-hlte-$KERNEL_DATE.zip * -x README.md ZyborgX-hlte-$KERNEL_DATE.zip && cd ..
