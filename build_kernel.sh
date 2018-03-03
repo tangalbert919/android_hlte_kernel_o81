@@ -9,6 +9,8 @@ UBERTC="/home/theidroid/Documents/arm-linux-androideabi-8.x/bin/arm-linux-androi
 
 DEFAULT="/home/theidroid/Android/Sdk/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-"
 
+LINARO="/home/theidroid/Documents/arm-linaro-toolchain/bin/arm-linux-gnueabi-"
+
 KERNEL_DATE=`date +%Y%m%d`
 
 export ARCH=arm

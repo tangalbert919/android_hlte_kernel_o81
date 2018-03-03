@@ -16,8 +16,10 @@ struct cpufreq_limit_handle;
 
 #if defined(CONFIG_ARCH_MSM8974PRO)
 #define MAX_FREQ_LIMIT	2457600
+#elif defined(CONFIG_CPU_OVERCLOCK)
+#define MAX_FREQ_LIMIT	2803000
 #else
-#define MAX_FREQ_LIMIT	2265600
+#define MAX_FREQ_LIMIT  2265000
 #endif
 #define MIN_FREQ_LIMIT	268800
 
