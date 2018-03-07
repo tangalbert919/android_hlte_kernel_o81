@@ -15,7 +15,7 @@ LINARO="/home/theidroid/Documents/arm-linaro-toolchain/bin/arm-linux-gnueabi-"
 KERNEL_DATE=`date +%Y%m%d`
 
 export ARCH=arm
-export CROSS_COMPILE="$LINARO"
+export CROSS_COMPILE="$UBERTC"
 
 mkdir output
 
