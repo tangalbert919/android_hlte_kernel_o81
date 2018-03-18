@@ -3,8 +3,7 @@
 # ZyborgX build script
 # Basically the LineageOS build script with a lot of upgrades.
 #
-# It is recommended that you modify this before running it, otherwise it will not work. This
-# script was designed to be run from the AOSP source code.
+# It is recommended that you modify this before running it, otherwise it will not work.
 
 UBERTC="/home/theidroid/Documents/arm-linux-androideabi-8.x/bin/arm-linux-androideabi-"
 
